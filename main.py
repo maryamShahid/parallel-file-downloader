@@ -70,7 +70,7 @@ def findNumberOfFiles(indexFileData):
 
 
 def thread_function(startByte, endByte, nextIPAddress, nextPath, nextUrl):
-    getRangeRequest(startByte, endByte, nextPath, nextIPAddress)
+    getRangeRequest(startByte, endByte+1, nextPath, nextIPAddress)
 
     fileData = ''
     while True:
@@ -87,9 +87,10 @@ def thread_function(startByte, endByte, nextIPAddress, nextPath, nextUrl):
     if formattedLineTextData:
         fileName = nextPath.rsplit('/', 1)[-1]
         textFile = open(fileName, "w+")
+        textFile.seek(startByte)
         textFile.write(formattedLineTextData)
-        textFile.close()
-        print('. ' + nextUrl + ' (range = ' + str(startByte) + '-' + str(endByte) + ') is downloaded')
+
+    print('. ' + nextUrl + ' (range = ' + str(startByte) + '-' + str(endByte) + ') is downloaded')
 
 
 if indexURL:
@@ -153,10 +154,10 @@ if indexURL:
             print('file length: ', n)
 
             if n % threadCount == 0:
-                byteCount = n / threadCount
+                byteCount = int(n / threadCount)
 
-                for i in range(threadCount):
-                    start = byteCount * i
+                for threadNumber in range(threadCount):
+                    start = byteCount * threadNumber
                     end = start + byteCount - 1
 
                     t = threading.Thread(target=thread_function, args=(start, end, nextIPAddress, nextPath, nextUrl))
@@ -171,29 +172,24 @@ if indexURL:
 
                 # modThreads will download floorBytes + 1
                 # TO-DO
-                for i in range(modThreads):
-                    start = floorBytesAddOne * i
+                for threadNumber in range(modThreads):
+                    start = floorBytesAddOne * threadNumber
                     end = start + floorBytesAddOne - 1
                     modEndByte = end
 
                     t = threading.Thread(target=thread_function, args=(start, end, nextIPAddress, nextPath, nextUrl))
                     t.start()
 
+                secondStart = modEndByte + 1
+                secondEnd = secondStart + floorBytes - 1
                 # remainingThreads will download floorBytes
-                for i in range(remainingThreads):
-                    if i == 0:
-                        secondStart = modEndByte + 1
-                        secondEnd = secondStart + floorBytes - 1
+                for threadNumber in range(remainingThreads):
+                    t = threading.Thread(target=thread_function,
+                                         args=(secondStart, secondEnd, nextIPAddress, nextPath, nextUrl))
+                    t.start()
 
-                        t = threading.Thread(target=thread_function, args=(secondStart, secondEnd, nextIPAddress, nextPath, nextUrl))
-                        t.start()
-
-                    elif i >= 1:
-                        secondStart = secondStart + floorBytes
-                        secondEnd = secondStart + floorBytes - 1
-
-                        t = threading.Thread(target=thread_function, args=(secondStart, secondEnd, nextIPAddress, nextPath, nextUrl))
-                        t.start()
+                    secondStart = secondEnd + 1
+                    secondEnd = secondStart + floorBytes - 1
 
         # if head request is 404 not found
         else:
