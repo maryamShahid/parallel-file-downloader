@@ -6,13 +6,11 @@ import sys
 from urllib import parse
 
 indexURL = ''
-lowerBound = 0
-upperBound = 1000000
 threadCount = 3
 
 if sys.argv[1]:
     indexURL = str(sys.argv[1])
-    print(indexURL)
+    # print(indexURL)
 
 if len(sys.argv) == 3:
     threadCount = int(str(sys.argv[2]))
@@ -69,8 +67,8 @@ def findNumberOfFiles(indexFileData):
     return count
 
 
-def thread_function(startByte, endByte, nextIPAddress, nextPath, nextUrl):
-    getRangeRequest(startByte, endByte+1, nextPath, nextIPAddress)
+def thread_function(startByte, endByte, nextIPAddress, nextPath):
+    getRangeRequest(startByte, endByte, nextPath, nextIPAddress)
 
     fileData = ''
     while True:
@@ -79,7 +77,7 @@ def thread_function(startByte, endByte, nextIPAddress, nextPath, nextUrl):
             break
         fileData += data.decode("utf-8")
 
-    # print('filedate ', fileData)
+    print('filedate ', fileData)
 
     lineTextData = fileData.rsplit('plain', 1)[-1]
     formattedLineTextData = os.linesep.join([s for s in lineTextData.splitlines() if s])
@@ -90,7 +88,7 @@ def thread_function(startByte, endByte, nextIPAddress, nextPath, nextUrl):
         textFile.seek(startByte)
         textFile.write(formattedLineTextData)
 
-    print('. ' + nextUrl + ' (range = ' + str(startByte) + '-' + str(endByte) + ') is downloaded')
+    print(str(startByte) + ':' + str(endByte) + '(' + str(endByte + 1) + ')')
 
 
 if indexURL:
@@ -151,7 +149,8 @@ if indexURL:
             sock.connect((nextIPAddress, 80))
 
             n = getContentLength(fileData)
-            print('file length: ', n)
+            print(str(i + 1) + '. ' + nextUrl + ' (size = ' + str(n) + ') is downloaded')
+            print('File parts:')
 
             if n % threadCount == 0:
                 byteCount = int(n / threadCount)
@@ -160,7 +159,7 @@ if indexURL:
                     start = byteCount * threadNumber
                     end = start + byteCount - 1
 
-                    t = threading.Thread(target=thread_function, args=(start, end, nextIPAddress, nextPath, nextUrl))
+                    t = threading.Thread(target=thread_function, args=(start, end, nextIPAddress, nextPath))
                     t.start()
 
             else:
@@ -170,22 +169,20 @@ if indexURL:
                 floorBytesAddOne = floorBytes + 1
                 modEndByte = 0
 
-                # modThreads will download floorBytes + 1
-                # TO-DO
+                # modThreads will download floorBytesAddOne
                 for threadNumber in range(modThreads):
                     start = floorBytesAddOne * threadNumber
                     end = start + floorBytesAddOne - 1
                     modEndByte = end
 
-                    t = threading.Thread(target=thread_function, args=(start, end, nextIPAddress, nextPath, nextUrl))
+                    t = threading.Thread(target=thread_function, args=(start, end, nextIPAddress, nextPath))
                     t.start()
 
                 secondStart = modEndByte + 1
                 secondEnd = secondStart + floorBytes - 1
                 # remainingThreads will download floorBytes
                 for threadNumber in range(remainingThreads):
-                    t = threading.Thread(target=thread_function,
-                                         args=(secondStart, secondEnd, nextIPAddress, nextPath, nextUrl))
+                    t = threading.Thread(target=thread_function, args=(secondStart, secondEnd, nextIPAddress, nextPath))
                     t.start()
 
                     secondStart = secondEnd + 1
@@ -200,5 +197,4 @@ if indexURL:
             if t is main_thread:
                 continue
             t.join()
-        print('done')
 
