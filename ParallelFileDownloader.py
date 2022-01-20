@@ -77,7 +77,7 @@ def thread_function(startByte, endByte, nextIPAddress, nextPath):
             break
         fileData += data.decode("utf-8")
 
-    print('filedate ', fileData)
+    # print(fileData)
 
     lineTextData = fileData.rsplit('plain', 1)[-1]
     formattedLineTextData = os.linesep.join([s for s in lineTextData.splitlines() if s])
