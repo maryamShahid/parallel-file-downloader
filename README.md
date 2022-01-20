@@ -1,6 +1,8 @@
 # ParallelFileDownloader
 
-#### How to Run:
+A program that downloads an index file to obtain a list of text file URLs and download these files in parallel using multithreading.
+
+### How to Run:
 
 ```
 python3 ParallelFileDownloader.py <index_file> <connection_count>
